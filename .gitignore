@@ -1,0 +1,9 @@
+# PyInstaller folders
+build/
+dist/
+
+# Also exclude the metadata file created by PyInstaller
+*.spec
+
+# Python bytecode
+__pycache__/
