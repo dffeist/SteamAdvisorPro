@@ -1,6 +1,7 @@
 # PyInstaller folders
 build/
 dist/
+steam_advisor_config.json
 
 # Also exclude the metadata file created by PyInstaller
 *.spec
