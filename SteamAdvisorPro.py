@@ -41,7 +41,7 @@ class SteamAdvisorGUI:
         self.config = {
             "priorities": {}, 
             "use_api": False, 
-            "weights": {"priority": 30, "recency": 30, "playtime": 20, "size": 20}
+            "weights": {"priority": 3, "recency": 3, "playtime": 3, "size": 3}
         }
         self.refresh_internal_paths()
         
@@ -59,11 +59,11 @@ class SteamAdvisorGUI:
                     self.config = json.load(f)
                 self.refresh_internal_paths()
             except json.JSONDecodeError:
-                self.config = {"priorities": {}, "use_api": False}
+                self.config = {"priorities": {}, "use_api": False, "weights": {"priority": 3, "recency": 3, "playtime": 3, "size": 3}}
                 self.show_settings_window(is_initial=True)
         else:
             if messagebox.askyesno("Initalize or Reset Application", "No configuration file found (steam_advisor_config.json).\n\nWarning: Proceeding will reset all settings to default.\n\nProceed?"):
-                self.config = {"priorities": {}, "use_api": False}
+                self.config = {"priorities": {}, "use_api": False, "weights": {"priority": 3, "recency": 3, "playtime": 3, "size": 3}}
                 self.show_settings_window(is_initial=True)
             else:
                 self.root.destroy()
@@ -484,11 +484,11 @@ class SteamAdvisorGUI:
         if not self.all_game_data: return []
         
         # Load weights from config
-        w = self.config.get("weights", {"priority": 40, "recency": 35, "playtime": 25, "size": 0})
-        wp = w.get("priority", 40)
-        wr = w.get("recency", 35)
-        wu = w.get("playtime", 25)
-        ws = w.get("size", 0)
+        w = self.config.get("weights", {"priority": 3, "recency": 3, "playtime": 3, "size": 3})
+        wp = w.get("priority", 3)
+        wr = w.get("recency", 3)
+        wu = w.get("playtime", 3)
+        ws = w.get("size", 3)
 
         max_playtime = max([g['playtime_raw'] for g in self.all_game_data.values()] + [1])
         
@@ -528,11 +528,11 @@ class SteamAdvisorGUI:
         ttk.Label(frame, text="Adjust Recommendation Weights", font=("Arial", 12, "bold")).pack(pady=(0, 10))
         ttk.Label(frame, text="Higher total score = Better candidate for SSD", font=("Arial", 8, "italic")).pack(pady=(0, 20))
 
-        weights = self.config.get("weights", {"priority": 40, "recency": 35, "playtime": 25, "size": 0})
+        weights = self.config.get("weights", {"priority": 3, "recency": 3, "playtime": 3, "size": 3})
         
         sliders = {}
         fields = [
-            ("priority", "User Priority (1-5)"),
+            ("priority", "User Priority"),
             ("recency", "Recency (Last Played)"),
             ("playtime", "Total Playtime"),
             ("size", "Game Install Size")
@@ -546,7 +546,7 @@ class SteamAdvisorGUI:
             val_label.pack(side="right")
             
             # Slider
-            s = ttk.Scale(frame, from_=0, to=100, orient="horizontal", value=weights.get(key, 0))
+            s = ttk.Scale(frame, from_=1, to=5, orient="horizontal", value=weights.get(key, 3))
             s.pack(fill="x", pady=(0, 10))
             
             # Update label on change
@@ -594,8 +594,12 @@ class SteamAdvisorGUI:
                     self.start_move_thread(manual_aids=aids)
             ttk.Button(frame, text=button_text, command=trigger_move).pack(pady=5)
 
-        promote_list = [(a, i, s) for a, i, s in scores if i['drive'] == "HDD" and s > 50]
-        demote_list = [(a, i, s) for a, i, s in scores if i['drive'] == "SSD" and s < 40]
+        # Dynamic thresholds based on the sum of current weights (defaulting to 3 if missing)
+        current_weights = self.config.get("weights", {"priority": 3, "recency": 3, "playtime": 3, "size": 3})
+        max_possible_score = sum(current_weights.values())
+
+        promote_list = [(a, i, s) for a, i, s in scores if i['drive'] == "HDD" and s > (max_possible_score * 0.5)]
+        demote_list = [(a, i, s) for a, i, s in scores if i['drive'] == "SSD" and s < (max_possible_score * 0.4)]
         create_rec_tab(notebook, "Promote to SSD", sorted(promote_list, key=lambda x: x[2], reverse=True), "Move to SSD")
         create_rec_tab(notebook, "Demote to HDD", sorted(demote_list, key=lambda x: x[2]), "Move to HDD")
 
