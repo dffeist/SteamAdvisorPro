@@ -38,8 +38,8 @@ def show_settings_window(parent_root, config: dict, on_save, is_initial=False):
                         row=1 if is_initial else 0, column=0, columnspan=2, sticky="w", pady=5)
 
     fields = [
+        ("SSD Steam Path:", "ssd_path", "C:\\Program Files (x86)\\Steam"),
         ("HDD Steam Path:", "hdd_path", "D:\\SteamLibrary"),
-        ("SSD Steam Path:", "ssd_path", "C:\\SteamLibrary"),
         ("Steam API Key:", "api_key", ""),
         ("SteamID64:", "steam_id", ""),
     ]
@@ -73,8 +73,8 @@ def show_settings_window(parent_root, config: dict, on_save, is_initial=False):
 
     def cancel_action():
         if is_initial:
-            if messagebox.askyesno("Exit", "Setup is required. Exit application?"):
-                parent_root.destroy()
+            win.destroy()
+            parent_root.quit()
         else:
             win.destroy()
 

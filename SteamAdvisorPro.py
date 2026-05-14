@@ -59,6 +59,8 @@ class SteamAdvisorGUI:
         self._apply_config(self.config)
 
         self._load_config_with_ui()
+        if not self.root.winfo_exists():
+            return
         self.setup_widgets()
         self.refresh_data()
 
@@ -97,7 +99,7 @@ class SteamAdvisorGUI:
                 self.config = DEFAULT_CONFIG.copy()
                 self._open_settings(is_initial=True)
             else:
-                self.root.destroy()
+                self.root.quit()
         except Exception as e:
             logging.warning("Config parse failed (%s); resetting to defaults", e)
             self.config = DEFAULT_CONFIG.copy()

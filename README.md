@@ -2,7 +2,7 @@
 
 Steam Advisor Pro is a storage management utility designed to help you optimize your gaming experience by intelligently managing where your Steam games are installed.
 
-This program is targeted towards a steam user with an SSD drive (usually your main or C: drive) and a HDD drive (often your Data or D: drive).
+This program is targeted towards a steam user with an SSD drive (usually your main or C: drive) and a HDD drive (often your Data or D: drive). Currently the program is designed for only two libraries. If you have three or more Steam Libraries, the additional libraries not entered into the settings will be ignored.
 
 As the number of games grow in size, managing limited SSD space becomes a chore. Often your SSD is your C: or boot drive and has limited room for all your games. You have a choice, delete games you're not often playing, something you do not really want to do especially if you have a slow internet connection or you are have metered bandwidth. The other option is to move the games to a second larger, slower, and cheaper HDD. Now you have to deal with a game that may not run as well. 
 
@@ -84,7 +84,7 @@ Thresholds for "Promote to SSD" and "Demote to HDD" scale dynamically with your 
 | **Get Recommendations** | Opens the scored promote/demote candidate list |
 | **Weights** | Adjust algorithm weights (1–5) for each scoring component |
 | **Edit Priority** | Assign a 1–5 importance rating to selected games (Can select multiple games using Shift or CTRL click to highlight) |
-| **Fetch SSD** | Fetches Developer SSD recommendations for all games |
+| **Fetch SSD** | Fetches Developer SSD recommendations from Steam for all games |
 | **Refresh** | Re-scan libraries for changes made outside the app |
 | **Hide Not Installed** | Filter out scanned games reporting 0 bytes |
 | **Settings** | Update drive paths, API key, and SteamID |
@@ -98,9 +98,9 @@ Thresholds for "Promote to SSD" and "Demote to HDD" scale dynamically with your 
 | **SSD** | Developer SSD Recommendation |
 | **Priority** | Your assigned rating (default 3) |
 | **Last Played** | Date last launched |
-| **Playtime** | Hours played; `*` means local data (no API) |
+| **Playtime** | Hours played; (hidden if no API and SteamID given in settings) |
 | **Show All Sizes** | Click individual ☐ by individual games to measure this game's folder size; click the column header to scan all |
-| **Game Size** | Cached folder size; `↻` means a Steam update was detected since last scan, rescan to update |
+| **Game Size** | Cache folder size, can take time if reading all game folders; `↻` means a Steam update was detected since last scan, rescan to update |
 
 ### Boot Reserve
 When a library is on the boot drive, a **Boot Available** indicator and **Boot Reserve %** spinner appear in the toolbar. The app blocks any move that would leave less free space than the reserve threshold.
