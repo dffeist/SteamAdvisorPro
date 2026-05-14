@@ -2,6 +2,7 @@
 build/
 dist/
 steam_advisor_config.json
+CLAUDE.md
 
 # Also exclude the metadata file created by PyInstaller
 *.spec

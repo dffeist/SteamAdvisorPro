@@ -113,22 +113,48 @@ def show_weight_settings(parent_root, config: dict, on_save):
     weights = config.get("weights", DEFAULT_WEIGHTS)
     sliders = {}
     fields = [
-        ("priority", "User Priority"),
-        ("recency", "Recency (Last Played)"),
-        ("playtime", "Total Playtime"),
-        ("size", "Game Install Size"),
+        ("priority", "User Priority",        False),
+        ("ssd_req",  "SSD Requirement",      False),
+        ("recency",  "Recency (Last Played)", False),
+        ("playtime", "Total Playtime",        False),
+        ("size",     "Game Install Size",     False),
     ]
 
-    for key, label in fields:
+    def _snap(slider, val_label):
+        snapped = round(float(slider.get()))
+        slider.set(snapped)
+        val_label.config(text=str(snapped))
+
+    for key, label, three_pos in fields:
+        default = weights.get(key, 3)
         lbl_frame = ttk.Frame(frame)
-        lbl_frame.pack(fill="x", pady=5)
-        ttk.Label(lbl_frame, text=label).pack(side="left")
-        val_label = ttk.Label(lbl_frame, text=str(weights.get(key, 0)))
+        lbl_frame.pack(fill="x", pady=(8, 0))
+        ttk.Label(lbl_frame, text=label, font=("Arial", 9, "bold")).pack(side="left")
+        val_label = ttk.Label(lbl_frame, text=str(default), width=2, anchor="e")
         val_label.pack(side="right")
-        s = ttk.Scale(frame, from_=1, to=5, orient="horizontal", value=weights.get(key, 3))
-        s.pack(fill="x", pady=(0, 10))
-        s.configure(command=lambda v, l=val_label: l.config(text=str(int(float(v)))))
+
+        s = ttk.Scale(frame, from_=1, to=5, orient="horizontal", value=default)
+        s.pack(fill="x", pady=(2, 0))
+        if three_pos:
+            s.configure(command=lambda v, l=val_label: l.config(
+                text=str(min([1, 3, 5], key=lambda x: abs(x - float(v))))
+            ))
+        else:
+            s.configure(command=lambda v, l=val_label: l.config(text=str(int(float(v)))))
+        if three_pos:
+            s.bind("<ButtonRelease-1>", lambda e, sl=s, l=val_label: _snap_three(sl, l))
+        else:
+            s.bind("<ButtonRelease-1>", lambda e, sl=s, l=val_label: _snap(sl, l))
         sliders[key] = s
+
+        tick_frame = ttk.Frame(frame)
+        tick_frame.pack(fill="x", pady=(0, 6))
+        if three_pos:
+            for text in ["NoSSD", "SSDRec", "SSDReq"]:
+                ttk.Label(tick_frame, text=text, foreground="#888").pack(side="left", expand=True)
+        else:
+            for i in range(1, 6):
+                ttk.Label(tick_frame, text=str(i), foreground="#888").pack(side="left", expand=True)
 
     def save_weights():
         new_weights = {k: int(s.get()) for k, s in sliders.items()}

@@ -2,6 +2,34 @@
 
 ---
 
+## 1.0.0B2
+
+### Overview
+A feature, bug fix, and documentation release. Adds SSD developer recommendations as a scoring factor, fixes one UI defect, and significantly expands the scoring algorithm documentation for end users.
+
+---
+
+### ✨ New Features
+
+**SSD Developer Recommendations — New Scoring Component**
+The scoring algorithm now includes a fifth component based on whether the game's developer has flagged SSD storage as required or recommended. Games marked "Required" receive the highest SSD score; "Recommended" scores mid-range; games with no SSD flag score zero for this component. Use the **Fetch SSD** button to retrieve and cache recommendations for your library. The component weight is adjustable (1–5) via the **Weights** button like all other components.
+
+---
+
+### 🐛 Bug Fixes
+
+**Edit Priority Dialog — Wrong Initial Value**
+The Edit Priority dialog was pre-populating with the value from the SSD column instead of the Priority column. This happened because the SSD column was inserted between Drive and Priority at an earlier point, shifting column indices by one. The dialog now correctly reads and displays the game's current Priority rating as the starting value.
+
+---
+
+### 📖 Documentation
+
+**Scoring Algorithm — Expanded End-User Guide**
+The Scoring Algorithm section in the README has been rewritten with a plain-English 3-column table covering each scoring component: what it means for you, and exactly where the data comes from (which button to click, which setting to configure). A concrete example showing a high-score vs. low-score game has been added to illustrate how the components interact.
+
+---
+
 ## 0.0.1B1 — First Public Release
 
 ### Overview

@@ -67,6 +67,7 @@ def resolve_paths(config: dict) -> dict:
         "boot_reserve_pct": config.get("boot_reserve_pct", BOOT_RESERVE_MIN_PCT),
         "metadata_map": config.get("metadata", {}),
         "hide_uninstalled": config.get("hide_uninstalled", False),
+        "ssd_status": config.get("ssd_status", {}),
         "ssd_is_boot": check_is_boot(ssd_path),
         "hdd_is_boot": check_is_boot(hdd_path),
     }

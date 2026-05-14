@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:store.steampowered.com)",
+      "WebFetch(domain:www.pcgamingwiki.com)"
+    ]
+  }
+}

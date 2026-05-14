@@ -30,7 +30,7 @@ class SteamAdvisorGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("Steam Storage Advisor Pro")
-        self.root.geometry("1150x850")
+        self.root.geometry("1500x900")
 
         if steam_api.is_steam_running():
             messagebox.showerror(
@@ -79,6 +79,7 @@ class SteamAdvisorGUI:
         self.boot_reserve_pct = paths["boot_reserve_pct"]
         self.metadata_map = paths["metadata_map"]
         self.hide_uninstalled_var.set(paths["hide_uninstalled"])
+        self.ssd_status = paths["ssd_status"]
         self.ssd_is_boot = paths["ssd_is_boot"]
         self.hdd_is_boot = paths["hdd_is_boot"]
 
@@ -106,6 +107,7 @@ class SteamAdvisorGUI:
         """Flush current state back into self.config and write to disk."""
         self.config["priorities"] = self.priority_map
         self.config["metadata"] = self.metadata_map
+        self.config["ssd_status"] = self.ssd_status
         self.config["hide_uninstalled"] = self.hide_uninstalled_var.get()
         self.config["boot_reserve_pct"] = self.boot_reserve_pct
         try:
@@ -182,6 +184,7 @@ class SteamAdvisorGUI:
         ttk.Button(top_frame, text="Get Recommendations", command=self._show_recommendations).pack(side="left", padx=5)
         ttk.Button(top_frame, text="Weights", command=self._open_weight_settings).pack(side="left", padx=5)
         ttk.Button(top_frame, text="Edit Priority", command=self.handle_edit_priority).pack(side="left", padx=5)
+        ttk.Button(top_frame, text="Fetch SSD", command=self._fetch_ssd_status).pack(side="left", padx=5)
         ttk.Button(top_frame, text="Refresh", command=self.refresh_data).pack(side="left", padx=5)
 
         self.boot_reserve_frame = ttk.Frame(top_frame)
@@ -219,7 +222,7 @@ class SteamAdvisorGUI:
         self.v_scrollbar = ttk.Scrollbar(table_container, orient="vertical")
         self.v_scrollbar.pack(side="right", fill="y")
 
-        columns = ("AppID", "Game Name", "Drive", "Priority", "Last Played", "Playtime", "Scan", "Game Size")
+        columns = ("AppID", "Game Name", "Drive", "SSD", "Priority", "Last Played", "Playtime", "Scan", "Game Size")
         self.tree = ttk.Treeview(
             table_container, columns=columns, show="headings",
             selectmode="extended", yscrollcommand=self.v_scrollbar.set,
@@ -229,11 +232,16 @@ class SteamAdvisorGUI:
                 self.tree.heading(col, text="☐ Show All Sizes", command=self.toggle_scan_all)
             else:
                 self.tree.heading(col, text=col, command=lambda _c=col: self.sort_column(self.tree, _c, False))
-            self.tree.column(col, width=120, anchor="center")
+            self.tree.column(col, width=100, anchor="center")
         self.tree.column("AppID", width=80, anchor="center")
-        self.tree.column("Game Name", width=350, anchor="w")
-        self.tree.column("Scan", width=110, anchor="center")
-        self.tree.column("Game Size", width=120, anchor="center")
+        self.tree.column("Game Name", width=400, anchor="w")
+        self.tree.column("Drive", width=65, anchor="center")
+        self.tree.column("SSD", width=72, anchor="center")
+        self.tree.column("Priority", width=65, anchor="center")
+        self.tree.column("Last Played", width=105, anchor="center")
+        self.tree.column("Playtime", width=90, anchor="center")
+        self.tree.column("Scan", width=115, anchor="center")
+        self.tree.column("Game Size", width=110, anchor="center")
         self.tree.pack(side="left", expand=True, fill="both")
         self.v_scrollbar.config(command=self.tree.yview)
         self.tree.bind("<ButtonRelease-1>", self.on_tree_click)
@@ -328,14 +336,59 @@ class SteamAdvisorGUI:
                     if str(meta.get("version", "")) != str(info.get("buildid", "")):
                         size_display += " ↻"
 
+            ssd_label = self.ssd_status.get(str(aid), "---")
+
             self.tree.insert("", "end", values=(
-                aid, info["name"], info["drive"], prio,
+                aid, info["name"], info["drive"], ssd_label, prio,
                 info["last_played"], info["playtime"], scan_status, size_display,
             ))
 
     # ------------------------------------------------------------------
     # Scanning
     # ------------------------------------------------------------------
+
+    def _fetch_ssd_status(self):
+        appids = list(self.all_game_data.keys())
+        if not appids:
+            return
+
+        popup = tk.Toplevel(self.root)
+        popup.title("Fetching SSD Requirements")
+        popup.geometry("350x180")
+        popup.resizable(False, False)
+        popup.transient(self.root)
+        popup.grab_set()
+
+        label = ttk.Label(popup, text=f"Fetching SSD data for {len(appids)} games...", padding=20, wraplength=300)
+        label.pack()
+        pb = ttk.Progressbar(popup, mode="determinate", maximum=len(appids), length=250)
+        pb.pack(pady=5)
+        progress_label = ttk.Label(popup, text="0 / {}".format(len(appids)))
+        progress_label.pack()
+
+        cancel_event = threading.Event()
+        ttk.Button(popup, text="Cancel", command=cancel_event.set).pack(pady=5)
+
+        def progress_cb(current, total):
+            def _update():
+                pb["value"] = current
+                progress_label.config(text=f"{current} / {total}")
+            self.root.after(0, _update)
+
+        def run():
+            results = steam_api.fetch_ssd_requirements(appids, progress_cb=progress_cb, cancel_event=cancel_event)
+            self.root.after(0, lambda: on_done(results))
+
+        def on_done(results):
+            self.ssd_status.update(results)
+            self._save_config()
+            self.refresh_data()
+            pb.pack_forget()
+            progress_label.pack_forget()
+            label.config(text="Done! SSD status updated.")
+            ttk.Button(popup, text="OK", command=popup.destroy).pack(pady=5)
+
+        threading.Thread(target=run, daemon=True).start()
 
     def toggle_scan_all(self):
         self.scan_all_enabled = not self.scan_all_enabled
@@ -441,7 +494,7 @@ class SteamAdvisorGUI:
         weights = self.config.get("weights", DEFAULT_WEIGHTS)
         with self._meta_lock:
             meta_snapshot = dict(self.metadata_map)
-        scores = score_games(self.all_game_data, meta_snapshot, self.priority_map, weights)
+        scores = score_games(self.all_game_data, meta_snapshot, self.priority_map, weights, self.ssd_status)
         open_recommendations(self.root, scores, self.config, on_move=self.start_move)
 
     # ------------------------------------------------------------------
@@ -452,7 +505,7 @@ class SteamAdvisorGUI:
         selections = self.tree.selection()
         if not selections:
             return
-        initial_prio = self.tree.item(selections[0])["values"][3]
+        initial_prio = self.tree.item(selections[0])["values"][4]
         count = len(selections)
         prompt = f"Set Priority (1-5) for {count} selected games:" if count > 1 else "Set Priority (1-5):"
         val = simpledialog.askinteger("Priority", prompt, initialvalue=initial_prio, minvalue=1, maxvalue=5)

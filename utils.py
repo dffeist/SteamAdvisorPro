@@ -17,12 +17,12 @@ BOOT_RESERVE_MIN_PCT = 15
 COPY_CHUNK_BYTES = MB_BYTES
 RECENCY_DECAY_DAYS = 90
 NEVER_PLAYED_DAYS = 365
-DEFAULT_WEIGHTS = {"priority": 3, "recency": 3, "playtime": 3, "size": 3}
+DEFAULT_WEIGHTS = {"priority": 3, "ssd_req": 3, "recency": 3, "playtime": 3, "size": 3}
 DEFAULT_CONFIG = {
     "lib_paths": [], "use_api": False, "api_key": "",
     "steam_id": "", "hide_uninstalled": False,
     "boot_reserve_pct": BOOT_RESERVE_MIN_PCT,
-    "priorities": {}, "metadata": {},
+    "priorities": {}, "metadata": {}, "ssd_status": {},
     "weights": DEFAULT_WEIGHTS,
 }
 
@@ -68,7 +68,10 @@ def calculate_folder_size(path):
 # Scoring
 # ---------------------------------------------------------------------------
 
-def score_games(all_game_data, metadata_map, priority_map, weights):
+_SSD_SCORE_MAP = {"SSDReq": 1.0, "SSDRec": 0.5}
+
+
+def score_games(all_game_data, metadata_map, priority_map, weights, ssd_status=None):
     """Return a list of (appid, info_dict, score) for every game in *all_game_data*."""
     scored = []
     now = datetime.now().timestamp()
@@ -76,9 +79,11 @@ def score_games(all_game_data, metadata_map, priority_map, weights):
         return scored
 
     wp = weights.get("priority", 3)
+    w_ssd = weights.get("ssd_req", 3)
     wr = weights.get("recency", 3)
     wu = weights.get("playtime", 3)
     ws = weights.get("size", 3)
+    ssd_status = ssd_status or {}
 
     max_playtime = max((g["playtime_raw"] for g in all_game_data.values()), default=1) or 1
     sizes = [
@@ -92,6 +97,9 @@ def score_games(all_game_data, metadata_map, priority_map, weights):
         prio = int(priority_map.get(str(aid), 3))
         p_score = (prio / 5) * wp
 
+        ssd_val = _SSD_SCORE_MAP.get(ssd_status.get(str(aid), ""), 0.0)
+        ssd_score = ssd_val * w_ssd
+
         days = (now - info["last_played_unix"]) / 86400 if info["last_played_unix"] > 0 else NEVER_PLAYED_DAYS
         r_score = max(0, (1 - (min(days, RECENCY_DECAY_DAYS) / RECENCY_DECAY_DAYS))) * wr
 
@@ -101,6 +109,6 @@ def score_games(all_game_data, metadata_map, priority_map, weights):
         g_size = meta.get("size", 0) if meta.get("enabled") else 0
         s_score = (g_size / max_size) * ws
 
-        total = round(p_score + r_score + u_score + s_score, 1)
+        total = round(p_score + ssd_score + r_score + u_score + s_score, 1)
         scored.append((aid, info, total))
     return scored
